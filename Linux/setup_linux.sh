@@ -42,8 +42,15 @@ setup_security_repos() {
     # Metasploit (Rapid7)
     if ! command -v msfconsole &> /dev/null; then
         echo "  -> Adding Metasploit repository..."
-        curl https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb > msfinstall && chmod 755 msfinstall && ./msfinstall
-        rm msfinstall
+        local installer
+        installer=$(mktemp)
+        if curl -fsSL https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb -o "$installer" \
+            && chmod 755 "$installer" && sudo "$installer"; then
+            echo "  ✓ Metasploit installed"
+        else
+            FAILED_PACKAGES+=("metasploit-framework")
+        fi
+        rm -f "$installer"
     fi
 }
 
@@ -161,7 +168,8 @@ install_python_managers() {
     
     # Instalar Pipx para ferramentas globais
     if ! command -v pipx &> /dev/null; then
-        sudo -u "$CURRENT_USER" bash -c "export PATH=\"\$HOME/.pyenv/shims:\$PATH\" && python3 -m pip install --user pipx && python3 -m pipx ensurepath"
+        # 'pip install --user' is blocked on Ubuntu 23.04+ / Debian 12+ (PEP 668)
+        sudo apt-get install -y pipx && sudo -u "$CURRENT_USER" pipx ensurepath || FAILED_PACKAGES+=("pipx")
     fi
 }
 
@@ -198,7 +206,7 @@ clone_git_repos() {
             echo "  ✓ $name (already cloned)"
         else
             echo "  → Cloning $name..."
-            sudo -u "$CURRENT_USER" git clone "$url" "$repo_path" || FAILED_PACKAGES+=("$name")
+            sudo -u "$CURRENT_USER" git clone --depth 1 "$url" "$repo_path" || FAILED_PACKAGES+=("$name")
         fi
     done <<< "$repos"
 }

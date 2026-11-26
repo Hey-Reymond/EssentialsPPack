@@ -55,8 +55,6 @@
     "wfuzz",
     "ffuf",
     "whatweb",
-    "metasploit-framework",
-    "exploitdb",
     "netcat-openbsd",
     "proxychains4",
     "tor",
@@ -64,7 +62,6 @@
     "bettercap",
     "radare2",
     "sleuthkit",
-    "volatility3",
     "binwalk",
     "foremost",
     "steghide",
@@ -84,8 +81,6 @@
   "pip": [
     "pwntools",
     "scapy",
-    "requests",
-    "beautifulsoup4",
     "bloodhound-py",
     "impacket",
     "sublist3r",
@@ -99,7 +94,12 @@
     "sslyze",
     "semgrep",
     "frida-tools",
-    "ropper"
+    "ropper",
+    "volatility3"
+  ],
+  "pip_libs": [
+    "requests",
+    "beautifulsoup4"
   ],
   "git": {
     "seclists": "https://github.com/danielmiessler/SecLists.git",
@@ -109,6 +109,7 @@
     "routersploit": "https://github.com/threat9/routersploit.git",
     "peass-ng": "https://github.com/carlospolop/PEASS-ng.git",
     "PayloadsAllTheThings": "https://github.com/swisskyrepo/PayloadsAllTheThings.git",
-    "mobsf": "https://github.com/MobSF/Mobile-Security-Framework-MobSF.git"
+    "mobsf": "https://github.com/MobSF/Mobile-Security-Framework-MobSF.git",
+    "exploitdb": "https://gitlab.com/exploit-database/exploitdb.git"
   }
 }

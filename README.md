@@ -1,9 +1,9 @@
 # 💻 Essentials Programming Pack
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/Hey-Reymond/ESSENTIALSPPACK/refs/heads/main/LICENSE)
-[![Project Status](https://img.shields.io/badge/status-Active%20%7C%20v5.0-brightgreen.svg)]()
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20WSL-lightgrey.svg)]()
-[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)]()
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Project Status](https://img.shields.io/badge/status-Active%20%7C%20v5.3-brightgreen.svg)](https://github.com/Hey-Reymond/EssentialsPPack)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20WSL-lightgrey.svg)](#-installation--usage)
+[![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)](https://github.com/Hey-Reymond/EssentialsPPack/issues)
 
 > **Transform your fresh OS into a fully-equipped development powerhouse in minutes!**
 
@@ -29,7 +29,7 @@ An open-source automation suite that configures a complete professional environm
 
 ## 🛠️ Arsenal of Tools
 
-### 💻 Windows Host & WSL 2 (`setup_windows.ps1`) - v5.0
+### 💻 Windows Host & WSL 2 (`setup_windows.ps1`) - v5.3
 
 **What's New in v5.0:**
 - 🎯 **JSON-based package configuration** - All packages in `packages_windows.json` for easy maintenance
@@ -43,9 +43,9 @@ This PowerShell script seamlessly integrates your Windows environment with Linux
 
 | Category | Tools & Technologies |
 |----------|----------------------|
-| **💼 Core Development** | VS Code, Visual Studio 2022 Community (C++ Workload), Neovim, Python 3, OpenJDK 17, .NET SDK |
+| **💼 Core Development** | VS Code, Neovim, Python 3, Temurin JDK 25 (+ JRE 8), .NET SDK 10, MSYS2 (MinGW toolchain), CMake, Ninja, Eclipse |
 | **🌐 Web & Runtimes** | Node.js (LTS), Bun (Ultra-fast JS/TS Runtime), MariaDB, Nginx |
-| **☁️ DevOps & Cloud** | Docker Desktop, VirtualBox, Git, AWS CLI, Azure CLI, Terraform, kubectl, Helmfile |
+| **☁️ DevOps & Cloud** | VirtualBox, Git, GitHub CLI, AWS CLI, Azure CLI, Terraform, kubectl (Docker runs inside WSL) |
 | **🔒 Cybersecurity & RE** | Nmap, Wireshark, Burp Suite Free, Ghidra, Volatility3, Cheat Engine, IDA Free, Rizin-Cutter, OllyDbg, HxD |
 | **⚡ Productivity & Quality of Life** | Windows Terminal, PowerShell 7, gsudo, eza, bat, zoxide, delta (Enhanced Git diff), DevToys, WinRAR |
 
@@ -86,8 +86,8 @@ The Windows script is your main entry point and automatically triggers WSL setup
 
 **Step 1: Clone the Repository**
 ```bash
-git clone https://github.com/Hey-Reymond/ESSENTIALSPPACK
-cd ESSENTIALSPPACK/Windows
+git clone https://github.com/Hey-Reymond/EssentialsPPack
+cd EssentialsPPack/Windows
 ```
 
 **Step 2: Execute the Setup Script**
@@ -110,8 +110,8 @@ For native Linux environments, use the dedicated setup script.
 
 **Step 1: Clone the Repository**
 ```bash
-git clone https://github.com/Hey-Reymond/ESSENTIALSPPACK
-cd ESSENTIALSPPACK/Linux
+git clone https://github.com/Hey-Reymond/EssentialsPPack
+cd EssentialsPPack/Linux
 ```
 
 **Step 2: Make the Script Executable and Run**
@@ -134,7 +134,13 @@ sudo ./setup_linux.sh
 
 Organizes all Windows packages by package manager:
 - **winget**: Preferred installation method (Windows Package Manager)
-- **choco**: Fallback or exclusive packages (Chocolatey)
+- **choco**: Chocolatey-only packages
+- **msys2**: packages installed inside MSYS2 via `pacman`
+- **portable_apps**: executables downloaded to a fixed folder
+
+A `winget` entry can be a plain ID or an object `{ "name", "winget", "choco" }`. The Chocolatey fallback only runs for entries that define a `choco` name (winget IDs don't exist on Chocolatey).
+
+> ⚠️ Keep the files as **pure JSON** — `//` comments break `ConvertFrom-Json` on Windows PowerShell 5.1.
 
 **Example - Adding/Removing Packages:**
 ```json
@@ -142,7 +148,7 @@ Organizes all Windows packages by package manager:
   "winget": [
     "Microsoft.VisualStudioCode",
     "Git.Git",
-    "RARLab.WinRAR"
+    { "name": "WinRAR", "winget": "RARLab.WinRAR", "choco": "winrar" }
   ],
   "choco": [
     "neovim",
@@ -157,7 +163,8 @@ Organizes all Windows packages by package manager:
 Organizes all Linux packages by installation method:
 - **apt**: System packages (apt-get)
 - **snap**: Snap packages
-- **pip**: Python tools (installed via pipx)
+- **pip**: Python CLI tools (installed via pipx)
+- **pip_libs**: Python libraries without a CLI (installed into `~/.venvs/essentials`)
 - **git**: Git repositories to clone
 
 **Example - Adding/Removing Packages:**
@@ -220,8 +227,8 @@ This project is built for automation and learning in **C/C++**, **Java**, **Web 
 
 | Script | Version | Status | Notes |
 |--------|---------|--------|-------|
-| `setup_windows.ps1` | **v5.0** | ✅ **Stable/Mature** | Refactored with JSON config, hybrid install, and smart checks. Extensively tested with Windows 10/11 + WSL 2. |
-| `wsl_ubuntu.sh` | **v5.0** | ✅ **Stable/Mature** | Refactored with modular functions, JSON config, and existence checks. Tested on various Ubuntu versions within WSL 2. |
+| `setup_windows.ps1` | **v5.3** | ✅ **Stable/Mature** | Refactored with JSON config, hybrid install, and smart checks. Extensively tested with Windows 10/11 + WSL 2. |
+| `wsl_ubuntu.sh` | **v5.3** | ✅ **Stable/Mature** | Refactored with modular functions, JSON config, and existence checks. Tested on various Ubuntu versions within WSL 2. |
 | `setup_linux.sh` | **v2.0** | ⚠️ **BETA** | Native Linux installer has not been 100% tested across all desktop environments. May encounter failures with external repos/snaps. **Use with caution.** |
 
 ### 🔒 Security Note

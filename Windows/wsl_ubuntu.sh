@@ -1,20 +1,8 @@
-Com base na análise do arquivo `setup_windows.ps1` (v5.2) que você forneceu, fiz a atualização do script `wsl_ubuntu.sh` para a **Versão 5.2**.
-
-O objetivo desta atualização é trazer a **paridade de recursos e otimizações** que foram implementadas na versão Windows, especificamente:
-
-1.  **Otimização de Cache (L1/L2)**: O script agora carrega a lista de pacotes instalados (APT, Snap, Pipx) *antes* de iniciar os loops de instalação. Isso elimina a execução repetitiva de comandos lentos (como `dpkg -l` ou `snap list`) dentro dos loops, tornando a reexecução do script muito mais rápida.
-2.  **Sistema de Logs em JSON**: Assim como no Windows, o script agora gera um log estruturado em JSON ao final da execução, salvo em `~/.local/state/essentialsppack/`, contendo estatísticas de sucesso, falha e itens pulados.
-3.  **Sumário Detalhado**: O relatório final foi expandido para mostrar não apenas as falhas, mas também os pacotes instalados com sucesso e os que foram pulados (já instalados), garantindo visibilidade total.
-4.  **Estrutura Refinada**: Manutenção da arquitetura modular introduzida na v5.1, mas com a lógica de verificação aprimorada.
-
-Aqui está o código atualizado para o `wsl_ubuntu.sh` (v5.2):
-
-```bash
 #!/bin/bash
 # =============================================================================
 #
 #  Essential's Pack - WSL (Ubuntu) Setup Script
-#  Version 5.2 (MATCHING WINDOWS: Cache Optimization + JSON Logging)
+#  Version 5.3 (MATCHING WINDOWS: Cache Optimization + JSON Logging)
 #
 #  Installs a complete Development, DevOps, and Pentest environment.
 #
@@ -102,7 +90,7 @@ write_install_summary() {
     if command -v jq &> /dev/null; then
         jq -n \
            --arg timestamp "$TIMESTAMP" \
-           --arg version "5.2" \
+           --arg version "5.3" \
            --argjson succeeded "$(printf '%s\n' "${SUCCEEDED_PACKAGES[@]}" | jq -R . | jq -s .)" \
            --argjson failed "$(printf '%s\n' "${FAILED_PACKAGES[@]}" | jq -R . | jq -s .)" \
            --argjson skipped "$(printf '%s\n' "${SKIPPED_PACKAGES[@]}" | jq -R . | jq -s .)" \
@@ -213,7 +201,14 @@ install_pip_tools() {
     # Ensure pipx
     if ! command -v pipx &> /dev/null; then
         echo "Installing pipx..."
-        sudo -u "$CURRENT_USER" bash -c 'python3 -m pip install --user pipx && python3 -m pipx ensurepath'
+        # 'pip install --user' is blocked on Ubuntu 23.04+ (PEP 668: externally-managed-environment)
+        if sudo apt-get install -y pipx; then
+            sudo -u "$CURRENT_USER" pipx ensurepath || true
+        else
+            echo "  ✗ pipx could not be installed via apt"
+            FAILED_PACKAGES+=("pipx")
+            return 0
+        fi
     fi
     
     # 1. Build Cache
@@ -228,7 +223,7 @@ install_pip_tools() {
             SKIPPED_PACKAGES+=("$pkg")
         else
             echo "  → Installing $pkg via pipx..."
-            if sudo -u "$CURRENT_USER" bash -c "export PATH=\"\$HOME/.local/bin:\$PATH\" && pipx install $pkg" 2>/dev/null; then
+            if sudo -u "$CURRENT_USER" bash -c "export PATH=\"\$HOME/.local/bin:\$PATH\" && pipx install \"$pkg\""; then
                 echo "  ✓ $pkg installed"
                 SUCCEEDED_PACKAGES+=("$pkg")
             else
@@ -237,6 +232,58 @@ install_pip_tools() {
             fi
         fi
     done
+}
+
+# Install Python libraries (no CLI entry point -> pipx can't install them) into a shared venv
+install_pip_libs() {
+    echo "=========================================="
+    echo "  Installing Python Libraries (venv)"
+    echo "=========================================="
+
+    local libs
+    libs=$(jq -r '.pip_libs // [] | .[]' "$PACKAGES_JSON")
+    if [ -z "$libs" ]; then
+        echo "  i No pip_libs defined."
+        return 0
+    fi
+
+    local venv_dir="$USER_HOME/.venvs/essentials"
+    if [ ! -x "$venv_dir/bin/python" ]; then
+        sudo apt-get install -y python3-venv || true
+        sudo -u "$CURRENT_USER" python3 -m venv "$venv_dir" || { FAILED_PACKAGES+=("venv:essentials"); return 0; }
+    fi
+
+    # shellcheck disable=SC2086
+    if sudo -u "$CURRENT_USER" "$venv_dir/bin/pip" install --upgrade $libs; then
+        echo "  ✓ Libraries installed in $venv_dir (activate with: source $venv_dir/bin/activate)"
+        SUCCEEDED_PACKAGES+=("pip-libs")
+    else
+        echo "  ✗ Failed to install Python libraries"
+        FAILED_PACKAGES+=("pip-libs")
+    fi
+}
+
+# Install Metasploit via Rapid7's official installer (the package is not in Ubuntu's repos)
+setup_metasploit() {
+    echo "=========================================="
+    echo "  Installing Metasploit (Rapid7 installer)"
+    echo "=========================================="
+
+    if command -v msfconsole &> /dev/null; then
+        echo "  ✓ metasploit-framework (already installed)"
+        SKIPPED_PACKAGES+=("metasploit-framework")
+        return 0
+    fi
+
+    local installer
+    installer=$(mktemp)
+    if curl -fsSL https://raw.githubusercontent.com/rapid7/metasploit-omnibus/master/config/templates/metasploit-framework-wrappers/msfupdate.erb -o "$installer" \
+        && chmod 755 "$installer" && sudo "$installer"; then
+        SUCCEEDED_PACKAGES+=("metasploit-framework")
+    else
+        FAILED_PACKAGES+=("metasploit-framework")
+    fi
+    rm -f "$installer"
 }
 
 # Clone git repositories
@@ -257,7 +304,8 @@ clone_git_repos() {
             SKIPPED_PACKAGES+=("git:$name")
         else
             echo "  → Cloning $name..."
-            if sudo -u "$CURRENT_USER" git clone "$url" "$repo_path"; then
+            # --depth 1: big repos (SecLists, exploitdb, PayloadsAllTheThings) don't need full history
+            if sudo -u "$CURRENT_USER" git clone --depth 1 "$url" "$repo_path"; then
                 echo "  ✓ $name cloned successfully"
                 SUCCEEDED_PACKAGES+=("git:$name")
             else
@@ -742,7 +790,7 @@ install_misc_tools() {
 
 main() {
     echo "=========================================="
-    echo "  Essential's Pack - WSL Setup v5.2"
+    echo "  Essential's Pack - WSL Setup v5.3"
     echo "=========================================="
     echo ""
     
@@ -756,6 +804,7 @@ main() {
     sudo apt-get upgrade -y
     
     # Execution
+    setup_metasploit
     install_apt_packages
     install_snap_packages
     install_rust
@@ -768,6 +817,7 @@ main() {
     install_cloud_tools
     install_go_tools
     install_pip_tools
+    install_pip_libs
     clone_git_repos
     install_cloned_repos
     install_radare2
@@ -789,7 +839,7 @@ main() {
     
     echo ""
     echo "=========================================="
-    echo "  WSL (UBUNTU) SETUP V5.2 COMPLETE!"
+    echo "  WSL (UBUNTU) SETUP V5.3 COMPLETE!"
     echo "=========================================="
     echo ""
     echo -e "\033[1;33mIMPORTANT:\033[0m"
@@ -800,4 +850,3 @@ main() {
 }
 
 main
-```

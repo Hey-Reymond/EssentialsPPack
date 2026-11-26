@@ -1,6 +1,6 @@
 # 💻 Essentials Programming Pack
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/reireymond/ESSENTIALSPPACK/refs/heads/main/LICENSE)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://raw.githubusercontent.com/Hey-Reymond/ESSENTIALSPPACK/refs/heads/main/LICENSE)
 [![Project Status](https://img.shields.io/badge/status-Active%20%7C%20v5.0-brightgreen.svg)]()
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20WSL-lightgrey.svg)]()
 [![Contributions Welcome](https://img.shields.io/badge/contributions-welcome-orange.svg)]()
@@ -86,7 +86,7 @@ The Windows script is your main entry point and automatically triggers WSL setup
 
 **Step 1: Clone the Repository**
 ```bash
-git clone https://github.com/reireymond/ESSENTIALSPPACK
+git clone https://github.com/Hey-Reymond/ESSENTIALSPPACK
 cd ESSENTIALSPPACK/Windows
 ```
 
@@ -110,7 +110,7 @@ For native Linux environments, use the dedicated setup script.
 
 **Step 1: Clone the Repository**
 ```bash
-git clone https://github.com/reireymond/ESSENTIALSPPACK
+git clone https://github.com/Hey-Reymond/ESSENTIALSPPACK
 cd ESSENTIALSPPACK/Linux
 ```
 
